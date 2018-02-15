@@ -9,8 +9,4 @@
     <PackageReference Include="Lykke.Common" Version="4.4.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\contract\Lykke.Job.RabbitMqToDiskSaver.Contract\Lykke.Job.RabbitMqToDiskSaver.Contract.csproj" />
-  </ItemGroup>
-
 </Project>

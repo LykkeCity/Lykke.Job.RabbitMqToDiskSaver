@@ -50,7 +50,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Lykke.Job.RabbitMqToDiskSaver.AzureRepositories\Lykke.Job.RabbitMqToDiskSaver.AzureRepositories.csproj" />
     <ProjectReference Include="..\Lykke.Job.RabbitMqToDiskSaver.Core\Lykke.Job.RabbitMqToDiskSaver.Core.csproj" />
     <ProjectReference Include="..\Lykke.Job.RabbitMqToDiskSaver.Services\Lykke.Job.RabbitMqToDiskSaver.Services.csproj" />
   </ItemGroup>
