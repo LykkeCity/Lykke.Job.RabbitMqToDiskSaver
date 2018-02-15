@@ -27,6 +27,10 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Settings
 
         public string DiskPath { get; set; }
 
+        public int WarningSizeInGigabytes { get; set; }
+
+        public int MaxSizeInGigabytes { get; set; }
+
         public RabbitMqSettings Rabbit { get; set; }
     }
 

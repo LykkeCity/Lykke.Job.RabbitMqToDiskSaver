@@ -43,7 +43,10 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Modules
             builder.RegisterType<DataToDiskSaver>()
                 .As<IDataToDiskSaver>()
                 .SingleInstance()
-                .WithParameter(TypedParameter.From(_settings.DiskPath));
+                .WithParameter(TypedParameter.From(_settings.DiskPath))
+                .WithParameter("diskPath", _settings.DiskPath)
+                .WithParameter("warningSizeInGigabytes", _settings.WarningSizeInGigabytes)
+                .WithParameter("maxSizeInGigabytes", _settings.MaxSizeInGigabytes);
 
             builder.RegisterType<RabbitMessageSubscriber>()
                 .As<IStartable>()
