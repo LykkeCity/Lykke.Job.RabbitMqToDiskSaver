@@ -42,6 +42,8 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Modules
 
             builder.RegisterType<DataToDiskSaver>()
                 .As<IDataToDiskSaver>()
+                .As<IStartable>()
+                .AutoActivate()
                 .SingleInstance()
                 .WithParameter(TypedParameter.From(_settings.DiskPath))
                 .WithParameter("diskPath", _settings.DiskPath)
