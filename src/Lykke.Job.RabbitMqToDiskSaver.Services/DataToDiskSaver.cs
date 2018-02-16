@@ -12,7 +12,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
     public class DataToDiskSaver : TimerPeriod, IDataToDiskSaver
     {
         private const string _timeFormat = "yyyyMMdd-HHmmss-fffffff";
-        private const string _directoryFormat = "yyyyMMddHH";
+        private const string _directoryFormat = "yyyy-MM-dd-HH";
         private const int _gigabyte = 1024 * 1024 * 1024;
 
         private readonly ILog _log;
@@ -42,7 +42,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
 
         public async Task SaveDataItemAsync(Orderbook item)
         {
-            string directory1 = $"{item.AssetPair}_{item.IsBuy}";
+            string directory1 = $"{item.AssetPair}_{(item.IsBuy ? "-buy" : "-sell")}";
             if (!Directory.Exists(directory1))
                 Directory.CreateDirectory(directory1);
             var now = DateTime.UtcNow;
