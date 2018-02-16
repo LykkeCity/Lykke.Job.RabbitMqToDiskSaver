@@ -79,7 +79,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
                     nameof(Execute),
                     $"RabbitMq data on {_diskPath} have taken {gbSize}Gb (>= {_warningSizeInGigabytes}Gb)");
 
-            if (_maxSizeInGigabytes == 0)
+            if (_maxSizeInGigabytes == 0 || gbSize < _maxSizeInGigabytes)
                 return;
 
             long sizeToFree = totalSize - _maxSizeInGigabytes * _gigabyte;
@@ -101,7 +101,8 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
                     await _log.WriteWarningAsync(nameof(DataToDiskSaver), nameof(Execute), $"Couldn't delete {file.Name}", ex);
                 }
             }
-            await _log.WriteWarningAsync(nameof(DataToDiskSaver), nameof(Execute), $"Deleted {deletedFilesCount} files from {_diskPath}");
+            if (deletedFilesCount > 0)
+                await _log.WriteWarningAsync(nameof(DataToDiskSaver), nameof(Execute), $"Deleted {deletedFilesCount} files from {_diskPath}");
         }
     }
 }
