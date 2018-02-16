@@ -5,12 +5,14 @@ using System.IO;
 using Common;
 using Common.Log;
 using Lykke.Job.RabbitMqToDiskSaver.Core.Services;
+using Lykke.Job.RabbitMqToDiskSaver.Core.Domain.Models;
 
 namespace Lykke.Job.RabbitMqToDiskSaver.Services
 {
     public class DataToDiskSaver : TimerPeriod, IDataToDiskSaver
     {
         private const string _timeFormat = "yyyyMMdd-HHmmss-fffffff";
+        private const string _directoryFormat = "yyyyMMddHH";
         private const int _gigabyte = 1024 * 1024 * 1024;
 
         private readonly ILog _log;
@@ -38,17 +40,28 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
             Directory.SetCurrentDirectory(_diskPath);
         }
 
-        public async Task SaveDataItemAsync(byte[] data)
+        public async Task SaveDataItemAsync(Orderbook item)
         {
+            string directory1 = $"{item.AssetPair}_{item.IsBuy}";
+            if (!Directory.Exists(directory1))
+                Directory.CreateDirectory(directory1);
             var now = DateTime.UtcNow;
+            string directory2 = now.ToString(_directoryFormat);
+            var dirPath = Path.Combine(directory1, directory2);
+            if (!Directory.Exists(dirPath))
+                Directory.CreateDirectory(dirPath);
+
+            var convertedText = OrderbookConverter.FormatMessage(item);
+
             while (true)
             {
-                string filePath = now.ToString(_timeFormat) + ".data";
+                string fileName = now.ToString(_timeFormat) + ".data";
+                string filePath = Path.Combine(dirPath, fileName);
                 try
                 {
                     using (var fileStream = File.Open(filePath, FileMode.CreateNew))
                     {
-                        fileStream.Write(data, 0, data.Length);
+                        fileStream.WriteString(convertedText);
                     }
                     break;
                 }

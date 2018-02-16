@@ -6,6 +6,7 @@ using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.Job.RabbitMqToDiskSaver.Core.Services;
+using Lykke.Job.RabbitMqToDiskSaver.Core.Domain.Models;
 
 namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
 {
@@ -16,7 +17,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
         private readonly IDataToDiskSaver _diskSaver;
         private readonly string _connectionString;
         private readonly string _exchangeName;
-        private RabbitMqSubscriber<byte[]> _subscriber;
+        private RabbitMqSubscriber<Orderbook> _subscriber;
 
         public RabbitMessageSubscriber(
             ILog log,
@@ -38,11 +39,11 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
                 .CreateForSubscriber(_connectionString, _exchangeName, "rabbitmqtodisksaver")
                 .MakeDurable();
 
-            _subscriber = new RabbitMqSubscriber<byte[]>(settings,
+            _subscriber = new RabbitMqSubscriber<Orderbook>(settings,
                     new ResilientErrorHandlingStrategy(_log, settings,
                         retryTimeout: TimeSpan.FromSeconds(10),
                         next: new DeadQueueErrorHandlingStrategy(_log, settings)))
-                .SetMessageDeserializer(this)
+                .SetMessageDeserializer(new JsonMessageDeserializer<Orderbook>())
                 .Subscribe(ProcessMessageAsync)
                 .CreateDefaultBinding()
                 .SetLogger(_log)
@@ -50,11 +51,11 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
                 .Start();
         }
 
-        private async Task ProcessMessageAsync(byte[] data)
+        private async Task ProcessMessageAsync(Orderbook item)
         {
             try
             {
-                await _diskSaver.SaveDataItemAsync(data);
+                await _diskSaver.SaveDataItemAsync(item);
             }
             catch (Exception ex)
             {
