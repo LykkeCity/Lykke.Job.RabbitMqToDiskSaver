@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Common;
@@ -20,6 +21,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
         private readonly int _warningSizeInGigabytes;
         private readonly int _maxSizeInGigabytes;
         private readonly DirectoryInfo _dirInfo;
+        private readonly HashSet<string> _directoriesHash = new HashSet<string>();
 
         public DataProcessor(
             IDiskWorker diskWorker,
@@ -45,8 +47,12 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
         public void Process(Orderbook item)
         {
             string directory1 = $"{item.AssetPair}-{(item.IsBuy ? "buy" : "sell")}";
-            if (!Directory.Exists(directory1))
-                Directory.CreateDirectory(directory1);
+            if (!_directoriesHash.Contains(directory1))
+            {
+                if (!Directory.Exists(directory1))
+                    Directory.CreateDirectory(directory1);
+                _directoriesHash.Add(directory1);
+            }
             string directory2 = item.Timestamp.ToString(_directoryFormat);
             var dirPath = Path.Combine(directory1, directory2);
 
