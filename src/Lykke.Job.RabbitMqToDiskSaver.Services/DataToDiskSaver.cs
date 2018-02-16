@@ -46,10 +46,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
                 string filePath = now.ToString(_timeFormat) + ".data";
                 try
                 {
-                    using (var fileStream = File.OpenWrite(filePath))
-                    {
-                        fileStream.Write(data, 0, data.Length);
-                    }
+                    File.WriteAllBytes(filePath, data);
                     break;
                 }
                 catch (IOException) when (File.Exists(filePath))
