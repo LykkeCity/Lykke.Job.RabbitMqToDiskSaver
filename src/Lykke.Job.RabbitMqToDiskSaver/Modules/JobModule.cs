@@ -40,8 +40,14 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Modules
             builder.RegisterType<ShutdownManager>()
                 .As<IShutdownManager>();
 
-            builder.RegisterType<DataToDiskSaver>()
-                .As<IDataToDiskSaver>()
+            builder.RegisterType<DiskWorker>()
+                .As<IDiskWorker>()
+                .As<IStartable>()
+                .AutoActivate()
+                .SingleInstance();
+
+            builder.RegisterType<DataProcessor>()
+                .As<IDataProcessor>()
                 .As<IStartable>()
                 .AutoActivate()
                 .SingleInstance()

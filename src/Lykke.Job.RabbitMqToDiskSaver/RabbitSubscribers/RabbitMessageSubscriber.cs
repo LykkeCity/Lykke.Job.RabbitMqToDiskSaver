@@ -14,7 +14,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
     {
         private readonly ILog _log;
         private readonly IConsole _console;
-        private readonly IDataToDiskSaver _diskSaver;
+        private readonly IDataProcessor _dataProcessor;
         private readonly string _connectionString;
         private readonly string _exchangeName;
         private RabbitMqSubscriber<Orderbook> _subscriber;
@@ -22,13 +22,13 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
         public RabbitMessageSubscriber(
             ILog log,
             IConsole console,
-            IDataToDiskSaver diskSaver,
+            IDataProcessor dataProcessor,
             string connectionString,
             string exchangeName)
         {
             _log = log;
             _console = console;
-            _diskSaver = diskSaver;
+            _dataProcessor = dataProcessor;
             _connectionString = connectionString;
             _exchangeName = exchangeName;
         }
@@ -55,7 +55,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
         {
             try
             {
-                await _diskSaver.SaveDataItemAsync(item);
+                _dataProcessor.Process(item);
             }
             catch (Exception ex)
             {
