@@ -18,10 +18,11 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
 
         private Dictionary<string, List<string>> _directoriesDict = new Dictionary<string, List<string>>();
 
-        public DiskWorker(ILog log)
-            : base((int)TimeSpan.FromSeconds(5).TotalMilliseconds, log)
+        public DiskWorker(ILog log, IShutdownManager shutdownManager)
+            : base((int)TimeSpan.FromSeconds(3).TotalMilliseconds, log)
         {
             _log = log;
+            shutdownManager.Register(this);
         }
 
         public void AddDataItem(string text, string directoryPath)
@@ -38,6 +39,13 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
             {
                 _lock.Release();
             }
+        }
+
+        public override void Stop()
+        {
+            base.Stop();
+
+            Execute().GetAwaiter().GetResult();
         }
 
         public override async Task Execute()
