@@ -35,6 +35,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
                 Directory.CreateDirectory(_diskPath);
 
             _dirInfo = new DirectoryInfo(_diskPath);
+            Directory.SetCurrentDirectory(_diskPath);
         }
 
         public async Task SaveDataItemAsync(byte[] data)
@@ -42,13 +43,12 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
             var now = DateTime.UtcNow;
             while (true)
             {
-                string filename = now.ToString(_timeFormat) + ".data";
-                string filePath = Path.Combine(_diskPath, filename);
+                string filePath = now.ToString(_timeFormat) + ".data";
                 try
                 {
-                    using (var fileStream = File.Open(filePath, FileMode.CreateNew))
+                    using (var fileStream = File.OpenWrite(filePath))
                     {
-                        await fileStream.WriteAsync(data, 0, data.Length);
+                        fileStream.Write(data, 0, data.Length);
                     }
                     break;
                 }
