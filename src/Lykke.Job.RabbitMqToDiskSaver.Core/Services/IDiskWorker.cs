@@ -2,6 +2,6 @@
 {
     public interface IDiskWorker
     {
-        void AddDataItem(string text, string directoryPath);
+        void AddDataItem(byte[] data);
     }
 }

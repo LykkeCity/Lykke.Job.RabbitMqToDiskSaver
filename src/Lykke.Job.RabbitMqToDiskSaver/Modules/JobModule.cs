@@ -51,8 +51,8 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Modules
                 .As<IStartable>()
                 .AutoActivate()
                 .SingleInstance()
-                .WithParameter(TypedParameter.From(_settings.DiskPath))
                 .WithParameter("diskPath", _settings.DiskPath)
+                .WithParameter("directory", _settings.Rabbit.ExchangeName)
                 .WithParameter("warningSizeInGigabytes", _settings.WarningSizeInGigabytes)
                 .WithParameter("maxSizeInGigabytes", _settings.MaxSizeInGigabytes);
 

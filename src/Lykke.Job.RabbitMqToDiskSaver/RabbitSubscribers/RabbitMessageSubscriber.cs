@@ -6,7 +6,6 @@ using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.Job.RabbitMqToDiskSaver.Core.Services;
-using Lykke.Job.RabbitMqToDiskSaver.Core.Domain.Models;
 
 namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
 {
@@ -17,12 +16,13 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
         private readonly IDataProcessor _dataProcessor;
         private readonly string _connectionString;
         private readonly string _exchangeName;
-        private RabbitMqSubscriber<Orderbook> _subscriber;
+        private RabbitMqSubscriber<byte[]> _subscriber;
 
         public RabbitMessageSubscriber(
             ILog log,
             IConsole console,
             IDataProcessor dataProcessor,
+            IShutdownManager shutdownManager,
             string connectionString,
             string exchangeName)
         {
@@ -31,6 +31,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
             _dataProcessor = dataProcessor;
             _connectionString = connectionString;
             _exchangeName = exchangeName;
+            shutdownManager.Register(this, 0);
         }
 
         public void Start()
@@ -39,11 +40,11 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
                 .CreateForSubscriber(_connectionString, _exchangeName, "rabbitmqtodisksaver")
                 .MakeDurable();
 
-            _subscriber = new RabbitMqSubscriber<Orderbook>(settings,
+            _subscriber = new RabbitMqSubscriber<byte[]>(settings,
                     new ResilientErrorHandlingStrategy(_log, settings,
                         retryTimeout: TimeSpan.FromSeconds(10),
                         next: new DeadQueueErrorHandlingStrategy(_log, settings)))
-                .SetMessageDeserializer(new JsonMessageDeserializer<Orderbook>())
+                .SetMessageDeserializer(this)
                 .Subscribe(ProcessMessageAsync)
                 .CreateDefaultBinding()
                 .SetLogger(_log)
@@ -51,7 +52,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.RabbitSubscribers
                 .Start();
         }
 
-        private async Task ProcessMessageAsync(Orderbook item)
+        private async Task ProcessMessageAsync(byte[] item)
         {
             try
             {

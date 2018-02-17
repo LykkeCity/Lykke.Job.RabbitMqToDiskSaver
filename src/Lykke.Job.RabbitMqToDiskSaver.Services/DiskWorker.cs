@@ -16,24 +16,21 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
         private readonly ILog _log;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
-        private Dictionary<string, List<string>> _directoriesDict = new Dictionary<string, List<string>>();
+        private List<byte[]> _items = new List<byte[]>();
 
         public DiskWorker(ILog log, IShutdownManager shutdownManager)
             : base((int)TimeSpan.FromSeconds(3).TotalMilliseconds, log)
         {
             _log = log;
-            shutdownManager.Register(this);
+            shutdownManager.Register(this, 1);
         }
 
-        public void AddDataItem(string text, string directoryPath)
+        public void AddDataItem(byte[] data)
         {
             _lock.Wait();
             try
             {
-                if (_directoriesDict.ContainsKey(directoryPath))
-                    _directoriesDict[directoryPath].Add(text);
-                else
-                    _directoriesDict.Add(directoryPath, new List<string> { text });
+                _items.Add(data);
             }
             finally
             {
@@ -50,51 +47,42 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
 
         public override async Task Execute()
         {
-            if (_directoriesDict.Count == 0)
+            if (_items.Count == 0)
                 return;
 
-            Dictionary<string, List<string>> batch;
+            List<byte[]> batch;
             await _lock.WaitAsync();
             try
             {
-                batch = _directoriesDict;
-                _directoriesDict = new Dictionary<string, List<string>>();
+                batch = _items;
+                _items = new List<byte[]>(batch.Count);
             }
             finally
             {
                 _lock.Release();
             }
 
-            foreach (var pair in batch)
+            foreach (var item in batch)
             {
-                await SaveDataItemAsync(pair.Value, pair.Key);
+                await SaveDataItemAsync(item);
             }
         }
 
-        private async Task SaveDataItemAsync(IEnumerable<string> items, string directoryPath)
+        private async Task SaveDataItemAsync(byte[] item)
         {
-            if (!Directory.Exists(directoryPath))
-                Directory.CreateDirectory(directoryPath);
             var now = DateTime.UtcNow;
             while (true)
             {
                 string fileName = now.ToString(_timeFormat) + ".data";
-                string filePath = Path.Combine(directoryPath, fileName);
                 try
                 {
-                    using (var fileStream = File.Open(filePath, FileMode.CreateNew))
+                    using (var fileStream = File.Open(fileName, FileMode.CreateNew))
                     {
-                        using (var witer = new StreamWriter(fileStream))
-                        {
-                            foreach (var item in items)
-                            {
-                                await witer.WriteLineAsync(item);
-                            }
-                        }
+                        fileStream.Write(item, 0, item.Length);
                     }
                     break;
                 }
-                catch (IOException) when (File.Exists(filePath))
+                catch (IOException) when (File.Exists(fileName))
                 {
                     now = now.AddTicks(1);
                 }

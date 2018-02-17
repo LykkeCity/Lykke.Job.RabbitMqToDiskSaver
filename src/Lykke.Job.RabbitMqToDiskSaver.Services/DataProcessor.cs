@@ -1,64 +1,52 @@
 ﻿using System;
 using System.Linq;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Lykke.Job.RabbitMqToDiskSaver.Core.Domain.Models;
 using Lykke.Job.RabbitMqToDiskSaver.Core.Services;
 
 namespace Lykke.Job.RabbitMqToDiskSaver.Services
 {
     public class DataProcessor : TimerPeriod, IDataProcessor
     {
-        private const string _directoryFormat = "yyyy-MM-dd-HH";
         private const int _gigabyte = 1024 * 1024 * 1024;
 
         private readonly ILog _log;
         private readonly IDiskWorker _diskWorker;
-        private readonly string _diskPath;
+        private readonly string _directory;
         private readonly int _warningSizeInGigabytes;
         private readonly int _maxSizeInGigabytes;
         private readonly DirectoryInfo _dirInfo;
-        private readonly HashSet<string> _directoriesHash = new HashSet<string>();
 
         public DataProcessor(
             IDiskWorker diskWorker,
             ILog log,
+            IShutdownManager shutdownManager,
             string diskPath,
+            string directory,
             int warningSizeInGigabytes,
             int maxSizeInGigabytes)
             : base((int)TimeSpan.FromMinutes(90).TotalMilliseconds, log)
         {
             _diskWorker = diskWorker;
             _log = log;
-            _diskPath = diskPath;
             _warningSizeInGigabytes = warningSizeInGigabytes > 0 ? warningSizeInGigabytes : 0;
             _maxSizeInGigabytes = maxSizeInGigabytes > 0 ? maxSizeInGigabytes : 0;
+            shutdownManager.Register(this, 3);
 
-            if (!Directory.Exists(_diskPath))
-                Directory.CreateDirectory(_diskPath);
+            _directory = Path.Combine(diskPath, directory);
 
-            _dirInfo = new DirectoryInfo(_diskPath);
-            Directory.SetCurrentDirectory(_diskPath);
+            if (!Directory.Exists(_directory))
+                Directory.CreateDirectory(_directory);
+
+            _dirInfo = new DirectoryInfo(_directory);
+            Directory.SetCurrentDirectory(_directory);
         }
 
-        public void Process(Orderbook item)
+        public void Process(byte[] data)
         {
-            string directory1 = $"{item.AssetPair}-{(item.IsBuy ? "buy" : "sell")}";
-            if (!_directoriesHash.Contains(directory1))
-            {
-                if (!Directory.Exists(directory1))
-                    Directory.CreateDirectory(directory1);
-                _directoriesHash.Add(directory1);
-            }
-            string directory2 = item.Timestamp.ToString(_directoryFormat);
-            var dirPath = Path.Combine(directory1, directory2);
-
-            var convertedText = OrderbookConverter.FormatMessage(item);
-
-            _diskWorker.AddDataItem(convertedText, dirPath);
+            _diskWorker.AddDataItem(data);
         }
 
         public override async Task Execute()
@@ -72,9 +60,9 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
 
             if (_warningSizeInGigabytes > 0 && gbSize >= _warningSizeInGigabytes)
                 await _log.WriteWarningAsync(
-                    nameof(DiskWorker),
+                    nameof(DataProcessor),
                     nameof(Execute),
-                    $"RabbitMq data on {_diskPath} have taken {gbSize}Gb (>= {_warningSizeInGigabytes}Gb)");
+                    $"RabbitMq data on {_directory} have taken {gbSize}Gb (>= {_warningSizeInGigabytes}Gb)");
 
             if (_maxSizeInGigabytes == 0 || gbSize < _maxSizeInGigabytes)
                 return;
@@ -95,11 +83,11 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
                 }
                 catch (Exception ex)
                 {
-                    await _log.WriteWarningAsync(nameof(DiskWorker), nameof(Execute), $"Couldn't delete {file.Name}", ex);
+                    await _log.WriteWarningAsync(nameof(DataProcessor), nameof(Execute), $"Couldn't delete {file.Name}", ex);
                 }
             }
             if (deletedFilesCount > 0)
-                await _log.WriteWarningAsync(nameof(DiskWorker), nameof(Execute), $"Deleted {deletedFilesCount} files from {_diskPath}");
+                await _log.WriteWarningAsync(nameof(DataProcessor), nameof(Execute), $"Deleted {deletedFilesCount} files from {_directory}");
         }
     }
 }
