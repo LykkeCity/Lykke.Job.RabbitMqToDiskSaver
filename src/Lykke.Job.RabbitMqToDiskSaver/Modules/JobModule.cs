@@ -44,7 +44,8 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Modules
                 .As<IDiskWorker>()
                 .As<IStartable>()
                 .AutoActivate()
-                .SingleInstance();
+                .SingleInstance()
+                .WithParameter(TypedParameter.From(_settings.IsHourlyBatched));
 
             builder.RegisterType<DataProcessor>()
                 .As<IDataProcessor>()

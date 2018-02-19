@@ -54,7 +54,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
             if (_warningSizeInGigabytes == 0 && _maxSizeInGigabytes == 0)
                 return;
 
-            var fileInfos = _dirInfo.EnumerateFiles();
+            var fileInfos = _dirInfo.EnumerateFiles("", SearchOption.AllDirectories);
             long totalSize = fileInfos.Sum(f => f.Length);
             int gbSize = (int)(totalSize / _gigabyte);
 

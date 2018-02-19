@@ -31,6 +31,8 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Settings
 
         public int MaxSizeInGigabytes { get; set; }
 
+        public bool IsHourlyBatched { get; set; }
+
         public RabbitMqSettings Rabbit { get; set; }
     }
 
