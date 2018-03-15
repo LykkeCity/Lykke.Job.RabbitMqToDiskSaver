@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using Common.Log;
+using Lykke.Common;
 using Lykke.Job.RabbitMqToDiskSaver.Core.Services;
 using Lykke.Job.RabbitMqToDiskSaver.Settings;
 using Lykke.Job.RabbitMqToDiskSaver.Services;
@@ -39,6 +40,8 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Modules
 
             builder.RegisterType<ShutdownManager>()
                 .As<IShutdownManager>();
+
+            builder.RegisterResourcesMonitoring(_log);
 
             builder.RegisterType<DiskWorker>()
                 .As<IDiskWorker>()

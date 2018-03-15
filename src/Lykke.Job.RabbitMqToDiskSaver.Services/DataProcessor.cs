@@ -54,7 +54,7 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
             if (_warningSizeInGigabytes == 0 && _maxSizeInGigabytes == 0)
                 return;
 
-            var fileInfos = _dirInfo.EnumerateFiles("", SearchOption.AllDirectories);
+            var fileInfos = _dirInfo.EnumerateFiles("*", SearchOption.AllDirectories);
             long totalSize = fileInfos.Sum(f => f.Length);
             int gbSize = (int)(totalSize / _gigabyte);
 
@@ -67,9 +67,10 @@ namespace Lykke.Job.RabbitMqToDiskSaver.Services
             if (_maxSizeInGigabytes == 0 || gbSize < _maxSizeInGigabytes)
                 return;
 
+            var files = fileInfos.OrderBy(f => f).ToList();
             long sizeToFree = totalSize - _maxSizeInGigabytes * _gigabyte;
             int deletedFilesCount = 0;
-            foreach (var file in fileInfos)
+            foreach (var file in files)
             {
                 try
                 {
